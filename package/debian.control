@@ -1,0 +1,19 @@
+Source: ubus
+Maintainer: Elektrobit <info@elektrobit.de>
+Build-Depends: cmake, debhelper (>= 9), libubox-dev, libjson-c-dev
+Standards-Version: 4.5.0
+
+Package: libubus1
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: OpenWrt micro bus architecture
+
+Package: ubus
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: OpenWrt micro bus architecture
+
+Package: libubus-dev
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, libubus1 (= ${binary:Version})
+Description: OpenWrt micro bus architecture
