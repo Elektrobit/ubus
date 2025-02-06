@@ -1,0 +1,46 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+
+Files: cli.c
+       examples/client.c
+       examples/count.c
+       examples/count.h
+       examples/server.c
+       libubus-acl.c
+       libubus-internal.h
+       libubus-io.c
+       libubus-obj.c
+       libubus-req.c
+       libubus-sub.c
+       libubus.c
+       libubus.h
+       lua/ubus.c
+       ubus_common.h
+       ubusd.c
+       ubusd.h
+       ubusd_acl.c
+       ubusd_acl.h
+       ubusd_event.c
+       ubusd_id.c
+       ubusd_id.h
+       ubusd_monitor.c
+       ubusd_obj.c
+       ubusd_obj.h
+       ubusd_proto.c
+       ubusmsg.h
+Copyright: 2011-2015, Felix Fietkau <nbd@openwrt.org>
+           2018, Hans Dedecker <dedeckeh@gmail.com>
+           2016, Iain Fraser <iainf@netduma.com>
+           2012, Jo-Philipp Wich <jow@openwrt.org>
+           2012-2015, John Crispin <blogic@openwrt.org>
+License: LGPL-2.1
+
+License: LGPL-2.1
+ This program is free software; you can redistribute it and/or modify
+ it under the terms of the GNU Lesser General Public License version 2.1
+ as published by the Free Software Foundation
+
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
+
