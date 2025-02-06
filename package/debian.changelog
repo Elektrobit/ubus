@@ -1,3 +1,9 @@
+ubus (20250206) unstable; urgency=medium
+
+  * Bump Version
+
+ -- Elektrobit  <info@elektrobit.com>  Thu, 06 Feb 2025 11:53:47 +0100
+
 ubus (20220615) unstable; urgency=medium
 
   * Initial package
