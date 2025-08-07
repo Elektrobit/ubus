@@ -83,11 +83,14 @@ static void client_cb(struct uloop_fd *sock, unsigned int events)
 		ssize_t written;
 
 		ub = ubl->msg;
+retry_writev:
 		written = ubus_msg_writev(sock->fd, ub, cl->txq_ofs);
 		if (written < 0) {
 			switch(errno) {
 			case EINTR:
+				goto retry_writev;
 			case EAGAIN:
+			case EACCES:
 				break;
 			default:
 				goto disconnect;
@@ -98,7 +101,7 @@ static void client_cb(struct uloop_fd *sock, unsigned int events)
 		cl->txq_ofs += written;
 		cl->txq_len -= written;
 		if (cl->txq_ofs < ub->len + sizeof(ub->hdr))
-			break;
+			goto retry_writev;
 
 		cl->txq_ofs = 0;
 		ubus_msg_list_free(ubl);
