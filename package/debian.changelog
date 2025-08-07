@@ -1,3 +1,16 @@
+ubus (20250807) unstable; urgency=medium
+
+  Sync upstream
+  * ubusd: do not call socket callback from ubus_msg_send
+  * ubusd: add another tx attempt on enqueueing the first message for a client
+  * ubusd: fix txq_len accounting
+  * ubusd: retry write on EINTR
+  * ubusd: treat EACCES on write like EAGAIN
+  * ubusd: make txq_len field signed
+  * libubus: flush all pending requests on connection loss
+
+ -- Elektrobit  <info@elektrobit.com>  Thu, 07 Aug 2025 08:00:00 +0200
+
 ubus (20250206) unstable; urgency=medium
 
   * Bump Version
