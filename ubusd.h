@@ -25,6 +25,7 @@
 
 #define UBUS_OBJ_HASH_BITS	4
 #define UBUS_CLIENT_MAX_TXQ_LEN	UBUS_MAX_MSGLEN
+#define UBUS_CLIENT_MAX_EXTRA_GID	64
 
 extern struct blob_buf b;
 
@@ -52,8 +53,10 @@ struct ubus_client {
 	struct uloop_fd sock;
 	struct blob_buf b;
 
-	uid_t uid;
-	gid_t gid;
+	int uid;
+	int gid;
+	int *extra_gid;
+	size_t n_extra_gid;
 	char *user;
 	char *group;
 
