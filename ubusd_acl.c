@@ -46,6 +46,8 @@ struct ubusd_acl_obj {
 
 	const char *user;
 	const char *group;
+	int uid;
+	int gid;
 
 	struct blob_attr *methods;
 	struct blob_attr *tags;
@@ -61,6 +63,8 @@ struct ubusd_acl_file {
 
 	const char *user;
 	const char *group;
+	int uid;
+	int gid;
 
 	struct blob_attr *blob;
 	struct list_head acl;
@@ -77,11 +81,19 @@ static struct ubus_object *acl_obj;
 static int
 ubusd_acl_match_cred(struct ubus_client *cl, struct ubusd_acl_obj *obj)
 {
-	if (obj->user && !strcmp(cl->user, obj->user))
+	size_t i;
+
+	if (obj->uid != -1 && cl->uid == obj->uid)
 		return 0;
 
-	if (obj->group && !strcmp(cl->group, obj->group))
-		return 0;
+	if (obj->gid != -1) {
+		if (cl->gid == obj->gid)
+			return 0;
+
+		for (i = 0; i < cl->n_extra_gid; i++)
+			if (cl->extra_gid[i] == obj->gid)
+				return 0;
+	}
 
 	return -1;
 }
@@ -166,6 +178,51 @@ ubusd_acl_check(struct ubus_client *cl, const char *obj,
 	return -1;
 }
 
+static int
+ubusd_acl_load_extra_gids(struct ubus_client *cl, pid_t pid)
+{
+#ifdef __linux__
+	char path[64];
+	FILE *f;
+	char line[512];
+	gid_t gids[UBUS_CLIENT_MAX_EXTRA_GID];
+	size_t n_gids = 0;
+
+	snprintf(path, sizeof(path), "/proc/%d/status", (int)pid);
+	f = fopen(path, "r");
+	if (!f)
+		return -1;
+
+	while (fgets(line, sizeof(line), f)) {
+		if (strncmp(line, "Groups:", 7) != 0)
+			continue;
+
+		char *p = line + 7;
+		while (*p && n_gids < UBUS_CLIENT_MAX_EXTRA_GID) {
+			char *end;
+			unsigned long gid = strtoul(p, &end, 10);
+			if (p == end)
+				break;
+			gids[n_gids++] = gid;
+			p = end;
+		}
+		break;
+	}
+
+	fclose(f);
+
+	if (n_gids > 0) {
+		cl->extra_gid = malloc(n_gids * sizeof(gid_t));
+		if (!cl->extra_gid)
+			return -1;
+		memcpy(cl->extra_gid, gids, n_gids * sizeof(gid_t));
+		cl->n_extra_gid = n_gids;
+	}
+#endif
+
+	return 0;
+}
+
 int
 ubusd_acl_init_client(struct ubus_client *cl, int fd)
 {
@@ -202,12 +259,15 @@ ubusd_acl_init_client(struct ubus_client *cl, int fd)
 	cl->group = strdup(group->gr_name);
 	cl->user = strdup(pwd->pw_name);
 
+	ubusd_acl_load_extra_gids(cl, cred.pid);
+
 	return 0;
 }
 
 void
 ubusd_acl_free_client(struct ubus_client *cl)
 {
+	free(cl->extra_gid);
 	free(cl->group);
 	free(cl->user);
 }
@@ -256,6 +316,8 @@ ubusd_acl_alloc_obj(struct ubusd_acl_file *file, const char *obj)
 	o->partial = partial;
 	o->user = file->user;
 	o->group = file->group;
+	o->uid = file->uid;
+	o->gid = file->gid;
 	o->avl.key = memcpy(k, obj, len);
 
 	list_add(&o->list, &file->acl);
@@ -282,7 +344,7 @@ ubusd_acl_add_access(struct ubusd_acl_file *file, struct blob_attr *obj)
 	o->tags = tb[ACL_ACCESS_TAGS];
 	o->priv = tb[ACL_ACCESS_PRIV];
 
-	if (file->user || file->group)
+	if (file->uid > 0 || file->gid > 0)
 		file->ok = 1;
 }
 
@@ -348,12 +410,30 @@ ubusd_acl_file_add(struct ubusd_acl_file *file)
 	blobmsg_parse(acl_policy, __ACL_MAX, tb, blob_data(file->blob),
 		      blob_len(file->blob));
 
-	if (tb[ACL_USER])
+	file->uid = -1;
+	file->gid = -1;
+
+	if (tb[ACL_USER]) {
+		struct passwd *pwd;
+
 		file->user = blobmsg_get_string(tb[ACL_USER]);
-	else if (tb[ACL_GROUP])
+		pwd = getpwnam(file->user);
+		if (pwd)
+			file->uid = pwd->pw_uid;
+		else
+			file->uid = 0;
+	} else if (tb[ACL_GROUP]) {
+		struct group *grp;
+
 		file->group = blobmsg_get_string(tb[ACL_GROUP]);
-	else
+		grp = getgrnam(file->group);
+		if (grp)
+			file->gid = grp->gr_gid;
+		else
+			file->gid = 0;
+	} else {
 		return;
+	}
 
 	if (tb[ACL_ACCESS])
 		blobmsg_for_each_attr(cur, tb[ACL_ACCESS], rem)
